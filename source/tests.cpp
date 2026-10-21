@@ -167,3 +167,69 @@ TEST(Swap, MethodAndFunction)
     swap(a, b);
     EXPECT_EQ(a.rows(), 2u);
 }
+TEST(Output, AlignedByColumns)
+{
+    linalg::Matrix m = { {1, 333}, {22, 1} };
+    std::ostringstream ss;
+    ss << m;
+    EXPECT_EQ(ss.str(), "| 1 333|\n|22   1|\n");
+}
+
+TEST(Arithmetic, UnaryOperators)
+{
+    linalg::Matrix a = { {1, -2}, {3, 4} };
+    EXPECT_TRUE(+a == a);
+    EXPECT_TRUE(-a == (linalg::Matrix{ {-1, 2}, {-3, -4} }));
+}
+
+TEST(Arithmetic, AddSubtract)
+{
+    linalg::Matrix a = { {1, 2}, {3, 4} };
+    linalg::Matrix b = { {5, 6}, {7, 8} };
+    EXPECT_TRUE(a + b == (linalg::Matrix{ {6, 8}, {10, 12} }));
+    EXPECT_TRUE(b - a == (linalg::Matrix{ {4, 4}, {4, 4} }));
+    linalg::Matrix c = a;
+    c += b;
+    c -= b;
+    EXPECT_TRUE(c == a);
+}
+
+TEST(Arithmetic, MultiplyByNumber)
+{
+    linalg::Matrix a = { {1, 2}, {3, 4} };
+    EXPECT_TRUE(2 * a == a * 2);
+    EXPECT_TRUE(a * 2 == (linalg::Matrix{ {2, 4}, {6, 8} }));
+    a *= 0.5;
+    EXPECT_EQ(a(1, 1), 2.0);
+}
+
+TEST(Arithmetic, MatrixMultiply)
+{
+    linalg::Matrix a = { {1, 2}, {3, 4} };
+    linalg::Matrix b = { {5, 6}, {7, 8} };
+    EXPECT_TRUE(a * b == (linalg::Matrix{ {19, 22}, {43, 50} }));
+    linalg::Matrix c = a;
+    c *= b;
+    EXPECT_TRUE(c == a * b);
+    linalg::Matrix row = { {1, 2, 3} };
+    linalg::Matrix col = { 1, 2, 3 };
+    EXPECT_EQ((row * col).rows(), 1u);
+    EXPECT_EQ((row * col)(0, 0), 14.0);
+}
+
+TEST(Arithmetic, IncompatibleSizesThrow)
+{
+    linalg::Matrix a(2, 2), b(3, 3);
+    EXPECT_THROW(a + b, std::runtime_error);
+    EXPECT_THROW(a - b, std::runtime_error);
+    EXPECT_THROW(a * b, std::runtime_error);
+}
+
+TEST(Arithmetic, ComparisonWithTolerance)
+{
+    linalg::Matrix a = { 0.3 * 3 };
+    linalg::Matrix b = { 0.9 };
+    EXPECT_TRUE(a == b);
+    EXPECT_FALSE(a != b);
+    EXPECT_TRUE(linalg::Matrix(2, 2) != linalg::Matrix(2, 3));
+}
