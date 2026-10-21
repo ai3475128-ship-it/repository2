@@ -117,3 +117,53 @@ TEST(Access, RangeFor)
     for (double x : m) sum += x;
     EXPECT_EQ(sum, 10.0);
 }
+TEST(Capacity, ReserveAndClear)
+{
+    linalg::Matrix m = { {1, 2}, {3, 4} };
+    m.reserve(100);
+    EXPECT_EQ(m.capacity(), 100u);
+    EXPECT_EQ(m(1, 1), 4.0); // элементы сохранились
+    m.reserve(10);
+    EXPECT_EQ(m.capacity(), 100u); // не уменьшается
+    m.clear();
+    EXPECT_TRUE(m.empty());
+    EXPECT_EQ(m.capacity(), 100u);
+}
+
+TEST(Capacity, ReshapeWithinCapacityKeepsMemory)
+{
+    linalg::Matrix m(4, 6);
+    const double* before = m.begin();
+    m.reshape(2, 3);
+    EXPECT_EQ(m.begin(), before);
+    EXPECT_EQ(m.capacity(), 24u);
+    m.reshape(10, 10);
+    EXPECT_EQ(m.capacity(), 100u);
+}
+
+TEST(Capacity, ShrinkToFit)
+{
+    linalg::Matrix m(4, 6);
+    m.reshape(2, 2);
+    m.shrink_to_fit();
+    EXPECT_EQ(m.capacity(), 4u);
+    m.clear();
+    m.shrink_to_fit();
+    EXPECT_EQ(m.capacity(), 0u);
+}
+
+TEST(Capacity, OverflowThrows)
+{
+    EXPECT_THROW(linalg::Matrix(static_cast<std::size_t>(-1), 2), std::runtime_error);
+}
+
+TEST(Swap, MethodAndFunction)
+{
+    linalg::Matrix a = { {1, 2}, {3, 4} };
+    linalg::Matrix b = { 1, 2, 3 };
+    a.swap(b);
+    EXPECT_EQ(a.rows(), 3u);
+    EXPECT_EQ(b.rows(), 2u);
+    swap(a, b);
+    EXPECT_EQ(a.rows(), 2u);
+}
