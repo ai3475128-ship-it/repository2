@@ -233,3 +233,85 @@ TEST(Arithmetic, ComparisonWithTolerance)
     EXPECT_FALSE(a != b);
     EXPECT_TRUE(linalg::Matrix(2, 2) != linalg::Matrix(2, 3));
 }
+TEST(Computations, NormTraceDet)
+{
+    linalg::Matrix a = { {2, 1}, {5, 3} };
+    EXPECT_NEAR(a.norm(), std::sqrt(39.0), 1e-9);
+    EXPECT_NEAR(a.trace(), 5.0, 1e-9);
+    EXPECT_NEAR(a.det(), 1.0, 1e-9);
+    EXPECT_NEAR((linalg::Matrix{ {0, 1}, {1, 0} }).det(), -1.0, 1e-9);
+    EXPECT_THROW(linalg::Matrix(2, 3).det(), std::runtime_error);
+    EXPECT_THROW(linalg::Matrix(2, 3).trace(), std::runtime_error);
+}
+
+TEST(Computations, Rank)
+{
+    EXPECT_EQ((linalg::Matrix{ {1, 2}, {2, 4} }).rank(), 1u);
+    EXPECT_EQ((linalg::Matrix{ {2, 1}, {5, 3} }).rank(), 2u);
+    EXPECT_EQ((linalg::Matrix{ {1, 2, 3}, {4, 5, 6} }).rank(), 2u);
+}
+
+TEST(Computations, GaussReturnsSameObject)
+{
+    linalg::Matrix a = { {2, 1, 5}, {5, 3, 13} };
+    linalg::Matrix& r = a.gauss_forward();
+    EXPECT_EQ(&r, &a);
+    a.gauss_backward();
+    EXPECT_TRUE(a == (linalg::Matrix{ {1, 0, 2}, {0, 1, 1} }));
+}
+
+TEST(Functions, ConcatenateTranspose)
+{
+    linalg::Matrix a = { {1, 2}, {3, 4} };
+    linalg::Matrix b = { 5, 6 };
+    EXPECT_TRUE(concatenate(a, b) == (linalg::Matrix{ {1, 2, 5}, {3, 4, 6} }));
+    EXPECT_TRUE(transpose(linalg::Matrix{ {1, 2, 3} }) == (linalg::Matrix{ 1, 2, 3 }));
+    EXPECT_THROW(concatenate(a, linalg::Matrix(3, 1)), std::runtime_error);
+}
+
+TEST(Functions, InvertAndSingular)
+{
+    linalg::Matrix a = { {2, 1}, {5, 3} };
+    EXPECT_TRUE(invert(a) == (linalg::Matrix{ {3, -1}, {-5, 2} }));
+    EXPECT_THROW(invert(linalg::Matrix{ {1, 2}, {2, 4} }), std::runtime_error);
+    EXPECT_THROW(invert(linalg::Matrix(2, 3)), std::runtime_error);
+}
+
+TEST(Functions, Solve)
+{
+    linalg::Matrix A = { {2, 1}, {5, 3} };
+    linalg::Matrix f = { 3, 8 };
+    EXPECT_TRUE(solve(A, f) == (linalg::Matrix{ 1, 1 }));
+    EXPECT_TRUE(A * solve(A, f) == f);
+}
+
+// свойства из задания
+class Properties : public ::testing::Test
+{
+protected:
+    linalg::Matrix A1 = { {2, 1, 0}, {1, 3, 1}, {0, 1, 4} };
+    linalg::Matrix A2 = { {1, 2, 0}, {0, 1, 3}, {2, 0, 1} };
+};
+
+TEST_F(Properties, ZeroPowerIsIdentity)
+{
+    linalg::Matrix E = { {1, 0, 0}, {0, 1, 0}, {0, 0, 1} };
+    EXPECT_TRUE(power(A1, 0) == E);
+}
+
+TEST_F(Properties, InverseOfTransposeEqualsTransposeOfInverse)
+{
+    EXPECT_TRUE(invert(transpose(A1)) == transpose(invert(A1)));
+}
+
+TEST_F(Properties, InverseOfProduct)
+{
+    EXPECT_TRUE(invert(A1 * A2) == invert(A2) * invert(A1));
+}
+
+TEST_F(Properties, PowerOfInverse)
+{
+    EXPECT_TRUE(power(invert(A1), 6) == power(power(invert(A1), -2), 3) * 1.0 ||
+                power(invert(A1), 6) == power(A1, -6));
+    EXPECT_TRUE(A1 * invert(A1) == power(A1, 0));
+}
